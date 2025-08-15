@@ -1,0 +1,467 @@
+````markdown
+# README — Triển khai từ đầu: EKS + AWS Load Balancer Controller + Argo CD + Helm (GitOps)
+
+Tài liệu này hướng dẫn **từ con số 0** đến khi ứng dụng **BE Nemi** chạy trên **EKS** và **Argo CD** tự đồng bộ từ Git (Helm chart).
+
+---
+
+## 0) Tiền đề & công cụ
+
+- Đã cài: **AWS CLI**, **kubectl**, **eksctl**, **helm**, **git** (tuỳ chọn: `gh`), (tuỳ chọn) **argocd** CLI.
+- Tài khoản AWS có quyền tạo EKS, IAM, VPC, ELB, ACM…
+- Đã có **SSH key** trong EC2 (ví dụ `kube-demo`) nếu muốn SSH vào node.
+
+Thiết lập biến môi trường (đổi lại theo của bạn):
+
+```bash
+export AWS_REGION=ap-southeast-1
+export CLUSTER_NAME=eksdemo1
+export NODEGROUP_NAME=eksdemo1-ng-private1
+export KEY_NAME=kube-demo   # Tên SSH public key trên EC2
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+````
+
+---
+
+## 1) Tạo EKS **không** kèm nodegroup (để tự quản lý node)
+
+```bash
+eksctl create cluster \
+  --name=${CLUSTER_NAME} \
+  --region=${AWS_REGION} \
+  --zones=ap-southeast-1a,ap-southeast-1b \
+  --without-nodegroup
+
+# Kiểm tra (chưa có node)
+kubectl get nodes
+eksctl get cluster --name=${CLUSTER_NAME}
+```
+
+---
+
+## 2) Tạo Managed Nodegroup (private)
+
+```bash
+eksctl create nodegroup \
+  --cluster=${CLUSTER_NAME} \
+  --region=${AWS_REGION} \
+  --name=${NODEGROUP_NAME} \
+  --node-type=t3.medium \
+  --nodes-min=1 \
+  --nodes-max=4 \
+  --node-volume-size=20 \
+  --ssh-access \
+  --ssh-public-key=${KEY_NAME} \
+  --managed \
+  --asg-access \
+  --external-dns-access \
+  --full-ecr-access \
+  --appmesh-access \
+  --alb-ingress-access \
+  --node-private-networking
+
+# Kiểm tra node đã lên
+kubectl get nodes -o wide
+```
+
+> Gợi ý: Nếu ALB không tạo được về sau, nhớ kiểm tra **tags của Subnet** (public: `kubernetes.io/role/elb=1`, internal: `kubernetes.io/role/internal-elb=1`, và `kubernetes.io/cluster/${CLUSTER_NAME}=shared`).
+
+---
+
+## 3) Bật IAM OIDC Provider (IRSA)
+
+```bash
+eksctl utils associate-iam-oidc-provider \
+  --region ${AWS_REGION} \
+  --cluster ${CLUSTER_NAME} \
+  --approve
+```
+
+---
+
+## 4) Tạo IAM Policy + ServiceAccount cho **AWS Load Balancer Controller**
+
+Tạo policy theo tài liệu chính thức:
+
+```bash
+curl -o iam_policy_latest.json \
+  https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+
+aws iam create-policy \
+  --policy-name AWSLoadBalancerControllerIAMPolicy \
+  --policy-document file://iam_policy_latest.json
+```
+
+Tạo **serviceAccount** (IRSA) kèm policy:
+
+```bash
+eksctl create iamserviceaccount \
+  --cluster=${CLUSTER_NAME} \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --attach-policy-arn=arn:aws:iam::${ACCOUNT_ID}:policy/AWSLoadBalancerControllerIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+```
+
+---
+
+## 5) Cài **AWS Load Balancer Controller** bằng Helm
+
+Lấy `VPC_ID` từ cluster & cài đặt:
+
+```bash
+VPC_ID=$(aws eks describe-cluster --name ${CLUSTER_NAME} --region ${AWS_REGION} \
+  --query "cluster.resourcesVpcConfig.vpcId" --output text)
+echo "VPC_ID=${VPC_ID}"
+
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=${CLUSTER_NAME} \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=${AWS_REGION} \
+  --set vpcId=${VPC_ID} \
+  --set image.repository=public.ecr.aws/eks/aws-load-balancer-controller
+
+# Kiểm tra
+kubectl -n kube-system get pods -l app.kubernetes.io/name=aws-load-balancer-controller
+```
+
+---
+
+## 6) Tạo **IngressClass** cho ALB
+
+```bash
+cat > 01-ingressclass.yaml <<'YAML'
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: my-aws-ingress-class
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+spec:
+  controller: ingress.k8s.aws/alb
+YAML
+
+kubectl apply -f 01-ingressclass.yaml
+```
+
+---
+
+## 7) Cài **Argo CD** vào cluster
+
+Cách nhanh bằng Helm (demo):
+
+```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+kubectl create namespace argocd
+
+helm upgrade --install argocd argo/argo-cd -n argocd \
+  --set server.service.type=LoadBalancer
+```
+
+Lấy UI endpoint & mật khẩu:
+
+```bash
+kubectl -n argocd get svc argocd-server
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d; echo
+```
+
+> Prod: dùng **Ingress + TLS/SSO**, *không* để server trần HTTP/LoadBalancer lâu dài.
+
+---
+
+## 8) Tạo **Helm chart** cho ứng dụng BE Nemi
+
+Tạo cấu trúc chart:
+
+```bash
+mkdir -p charts/be-nemi/templates
+```
+
+**`charts/be-nemi/Chart.yaml`**
+
+```yaml
+apiVersion: v2
+name: be-nemi
+description: Backend Nemi application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+```
+
+**`charts/be-nemi/values.yaml`** (đổi `<ACCOUNT_ID>` và tag image)
+
+```yaml
+replicaCount: 1
+
+image:
+  repository: <ACCOUNT_ID>.dkr.ecr.ap-southeast-1.amazonaws.com/srs-nemi-tool
+  tag: srs-nemi-tool-develop-1.0.0
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 8080
+
+ingress:
+  enabled: true
+  className: my-aws-ingress-class
+  alb:
+    name: ssl-ingress
+    scheme: internet-facing
+    certificateArn: arn:aws:acm:ap-southeast-1:<ACCOUNT_ID>:certificate/<YOUR-CERT-UUID> # hoặc bỏ nếu chỉ HTTP
+  hosts:
+    - paths:
+        - path: /
+          pathType: Prefix
+```
+
+**`charts/be-nemi/templates/_helpers.tpl`**
+
+```yaml
+{{- define "be-nemi.name" -}}
+{{ .Chart.Name }}
+{{- end }}
+
+{{- define "be-nemi.fullname" -}}
+{{ include "be-nemi.name" . }}-{{ .Release.Name }}
+{{- end }}
+```
+
+**`charts/be-nemi/templates/deployment.yaml`**
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "be-nemi.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: {{ include "be-nemi.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+```
+
+**`charts/be-nemi/templates/service.yaml`**
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "be-nemi.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+```
+
+**`charts/be-nemi/templates/ingress.yaml`**
+
+```yaml
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "be-nemi.fullname" . }}
+  annotations:
+    alb.ingress.kubernetes.io/load-balancer-name: {{ .Values.ingress.alb.name }}
+    alb.ingress.kubernetes.io/scheme: {{ .Values.ingress.alb.scheme }}
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/success-codes: '200'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
+    {{- if .Values.ingress.alb.certificateArn }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.alb.certificateArn }}
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - http:
+        paths:
+          {{- range .Values.ingress.hosts }}
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "be-nemi.fullname" $ }}
+                port:
+                  number: {{ $.Values.service.port }}
+          {{- end }}
+          {{- end }}
+{{- end }}
+```
+
+> Nếu chỉ muốn HTTP, bỏ các annotation liên quan `certificate-arn` và `ssl-redirect`.
+
+---
+
+## 9) Tạo **Argo CD Application** trỏ tới chart
+
+Tạo file `argocd/app-be-nemi.yaml` (đổi `repoURL` + `path` theo repo của bạn):
+
+```bash
+mkdir -p argocd
+cat > argocd/app-be-nemi.yaml <<'YAML'
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: be-nemi
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO>.git'
+    targetRevision: main
+    path: charts/be-nemi
+    helm:
+      releaseName: be-nemi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: be-nemi
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+YAML
+```
+
+Áp dụng Application:
+
+```bash
+kubectl apply -f argocd/app-be-nemi.yaml
+```
+
+---
+
+## 10) Push repo lên GitHub (khuyến nghị GitOps)
+
+```bash
+git init
+git add .
+git commit -m "feat: gitops bootstrap (chart + argocd app)"
+git branch -M main
+# Tạo repo trống trên GitHub rồi:
+git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO>.git
+git push -u origin main
+```
+
+> Nếu repo private, vào Argo CD → **Settings → Repositories** thêm credentials (hoặc `argocd repo add ...` bằng CLI).
+
+---
+
+## 11) Kiểm tra & truy cập ứng dụng
+
+```bash
+# Trạng thái Argo CD Application
+kubectl -n argocd get applications.argoproj.io be-nemi -o wide
+
+# Resource trong namespace đích
+kubectl -n be-nemi get all
+kubectl -n be-nemi get ingress
+```
+
+* Vào AWS Console → EC2 → **Load Balancers** kiểm tra ALB đã tạo.
+* Lấy DNS của ALB từ object Ingress (`ADDRESS`) rồi truy cập trình duyệt.
+
+---
+
+## 12) Cập nhật ứng dụng (GitOps Workflow)
+
+* Sửa `charts/be-nemi/values.yaml` (ví dụ đổi `image.tag`), commit & push:
+
+  ```bash
+  git commit -am "chore: bump image tag to vX.Y.Z"
+  git push
+  ```
+* Argo CD sẽ tự detect, sync, và rollout bản mới (đã bật `automated.prune/selfHeal`).
+
+---
+
+## 13) Troubleshooting nhanh
+
+* **ALB không tạo**: kiểm tra subnet tags, IAM policy, log:
+
+  ```bash
+  kubectl -n kube-system logs deployment/aws-load-balancer-controller
+  ```
+* **Service không có endpoint**: pod crash/Readiness fail → `kubectl -n be-nemi describe pod ...`
+* **ImagePullBackOff**: kiểm tra quyền ECR (node role đã có `--full-ecr-access`), hoặc pull secret nếu registry private khác.
+* **Argo CD “OutOfSync”**: sai `repoURL/targetRevision/path` hoặc repo private chưa cấp quyền.
+
+---
+
+## 14) Dọn dẹp
+
+```bash
+# Xoá app (giữ Argo CD)
+kubectl -n argocd delete application be-nemi
+
+# Gỡ Argo CD
+helm -n argocd uninstall argocd
+kubectl delete ns argocd
+
+# Xoá cluster (cẩn thận, chi phí!)
+eksctl delete cluster --name=${CLUSTER_NAME} --region=${AWS_REGION}
+```
+
+---
+
+## Ghi chú bảo mật & best practices
+
+* Dùng **Ingress + TLS** cho Argo CD server, bật **SSO/OIDC** (tắt admin mặc định).
+* Không commit **secrets** lên Git: dùng **External Secrets Operator** (AWS Secrets Manager) hoặc **SOPS + KMS**.
+* Tách môi trường **dev/stg/prod** bằng **AppProject** + nhiều `Application` + `values-*.yaml`.
+* Bật **prune + selfHeal** (đã có trong ví dụ) để đảm bảo drift-free.
+
+---
+
+```
+```

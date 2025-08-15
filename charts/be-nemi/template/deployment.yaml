@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "be-nemi.fullname" . }}
+  labels:
+    app: {{ include "be-nemi.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "be-nemi.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "be-nemi.name" . }}
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: {{ include "be-nemi.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
