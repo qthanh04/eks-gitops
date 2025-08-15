@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: be-nemi
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/TracVietHustCS/eks-nemi-gitops.git'
+    targetRevision: main
+    path: charts/be-nemi
+    helm:
+      releaseName: be-nemi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: be-nemi
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
