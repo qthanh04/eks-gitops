@@ -8,7 +8,9 @@ spec:
   source:
     repoURL: 'https://github.com/TracVietHustCS/eks-nemi-gitops.git'
     targetRevision: main
-    path: argocd/apps
+    path: argo-cd/apps
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
