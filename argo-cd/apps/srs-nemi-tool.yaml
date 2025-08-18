@@ -12,7 +12,7 @@ spec:
     helm:
       releaseName: release
   destination:
-    server: https://kubernetes.defa ult.svc
+    server: https://kubernetes.default.svc
     namespace: srs-nemi-tool
   syncPolicy:
     automated:
