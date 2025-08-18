@@ -1,8 +1,8 @@
 replicaCount: 1
 
 image:
-  repository: 173342361670.dkr.ecr.ap-southeast-1.amazonaws.com/srs-nemi-tool
-  tag: srs-nemi-tool-develop-1.0.0
+  repository: 992382687445.dkr.ecr.ap-southeast-1.amazonaws.com/nemibe
+  tag: latest
   pullPolicy: IfNotPresent
 
 service:
