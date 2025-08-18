@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: be-nemi
+  name: srs-nemi-tool
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: 'https://github.com/TracVietHustCS/eks-nemi-gitops.git'
     targetRevision: main
-    path: charts/be-nemi
+    path: charts/srs-nemi-tool
     helm:
-      releaseName: be-nemi
+      releaseName: release
   destination:
     server: https://kubernetes.default.svc
-    namespace: be-nemi
+    namespace: srs-nemi-tool
   syncPolicy:
     automated:
       prune: true

@@ -182,21 +182,21 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 Tạo cấu trúc chart:
 
 ```bash
-mkdir -p charts/be-nemi/templates
+mkdir -p charts/srs-nemi-tool/templates
 ```
 
-**`charts/be-nemi/Chart.yaml`**
+**`charts/srs-nemi-tool/Chart.yaml`**
 
 ```yaml
 apiVersion: v2
-name: be-nemi
+name: srs-nemi-tool
 description: Backend Nemi application
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
 ```
 
-**`charts/be-nemi/values.yaml`** (đổi `<ACCOUNT_ID>` và tag image)
+**`charts/srs-nemi-tool/values.yaml`** (đổi `<ACCOUNT_ID>` và tag image)
 
 ```yaml
 replicaCount: 1
@@ -223,40 +223,40 @@ ingress:
           pathType: Prefix
 ```
 
-**`charts/be-nemi/templates/_helpers.tpl`**
+**`charts/srs-nemi-tool/templates/_helpers.tpl`**
 
 ```yaml
-{{- define "be-nemi.name" -}}
+{{- define "srs-nemi-tool.name" -}}
 {{ .Chart.Name }}
 {{- end }}
 
-{{- define "be-nemi.fullname" -}}
-{{ include "be-nemi.name" . }}-{{ .Release.Name }}
+{{- define "srs-nemi-tool.fullname" -}}
+{{ include "srs-nemi-tool.name" . }}-{{ .Release.Name }}
 {{- end }}
 ```
 
-**`charts/be-nemi/templates/deployment.yaml`**
+**`charts/srs-nemi-tool/templates/deployment.yaml`**
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "be-nemi.fullname" . }}
+  name: {{ include "srs-nemi-tool.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+    app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+      app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+        app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
     spec:
       serviceAccountName: default
       containers:
-        - name: {{ include "be-nemi.name" . }}
+        - name: {{ include "srs-nemi-tool.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -275,15 +275,15 @@ spec:
             periodSeconds: 10
 ```
 
-**`charts/be-nemi/templates/service.yaml`**
+**`charts/srs-nemi-tool/templates/service.yaml`**
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "be-nemi.fullname" . }}
+  name: {{ include "srs-nemi-tool.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+    app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -292,17 +292,17 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app.kubernetes.io/name: {{ include "be-nemi.name" . }}
+    app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
 ```
 
-**`charts/be-nemi/templates/ingress.yaml`**
+**`charts/srs-nemi-tool/templates/ingress.yaml`**
 
 ```yaml
 {{- if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "be-nemi.fullname" . }}
+  name: {{ include "srs-nemi-tool.fullname" . }}
   annotations:
     alb.ingress.kubernetes.io/load-balancer-name: {{ .Values.ingress.alb.name }}
     alb.ingress.kubernetes.io/scheme: {{ .Values.ingress.alb.scheme }}
@@ -329,7 +329,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "be-nemi.fullname" $ }}
+                name: {{ include "srs-nemi-tool.fullname" $ }}
                 port:
                   number: {{ $.Values.service.port }}
           {{- end }}
@@ -343,27 +343,27 @@ spec:
 
 ## 9) Tạo **Argo CD Application** trỏ tới chart
 
-Tạo file `argocd/app-be-nemi.yaml` (đổi `repoURL` + `path` theo repo của bạn):
+Tạo file `argocd/app-srs-nemi-tool.yaml` (đổi `repoURL` + `path` theo repo của bạn):
 
 ```bash
 mkdir -p argocd
-cat > argocd/app-be-nemi.yaml <<'YAML'
+cat > argocd/app-srs-nemi-tool.yaml <<'YAML'
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: be-nemi
+  name: srs-nemi-tool
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: 'https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO>.git'
     targetRevision: main
-    path: charts/be-nemi
+    path: charts/srs-nemi-tool
     helm:
-      releaseName: be-nemi
+      releaseName: srs-nemi-tool
   destination:
     server: https://kubernetes.default.svc
-    namespace: be-nemi
+    namespace: srs-nemi-tool
   syncPolicy:
     automated:
       prune: true
@@ -376,7 +376,7 @@ YAML
 Áp dụng Application:
 
 ```bash
-kubectl apply -f argocd/app-be-nemi.yaml
+kubectl apply -f argocd/app-srs-nemi-tool.yaml
 ```
 
 ---
@@ -401,11 +401,11 @@ git push -u origin main
 
 ```bash
 # Trạng thái Argo CD Application
-kubectl -n argocd get applications.argoproj.io be-nemi -o wide
+kubectl -n argocd get applications.argoproj.io srs-nemi-tool -o wide
 
 # Resource trong namespace đích
-kubectl -n be-nemi get all
-kubectl -n be-nemi get ingress
+kubectl -n srs-nemi-tool get all
+kubectl -n srs-nemi-tool get ingress
 ```
 
 * Vào AWS Console → EC2 → **Load Balancers** kiểm tra ALB đã tạo.
@@ -415,7 +415,7 @@ kubectl -n be-nemi get ingress
 
 ## 12) Cập nhật ứng dụng (GitOps Workflow)
 
-* Sửa `charts/be-nemi/values.yaml` (ví dụ đổi `image.tag`), commit & push:
+* Sửa `charts/srs-nemi-tool/values.yaml` (ví dụ đổi `image.tag`), commit & push:
 
   ```bash
   git commit -am "chore: bump image tag to vX.Y.Z"
@@ -432,7 +432,7 @@ kubectl -n be-nemi get ingress
   ```bash
   kubectl -n kube-system logs deployment/aws-load-balancer-controller
   ```
-* **Service không có endpoint**: pod crash/Readiness fail → `kubectl -n be-nemi describe pod ...`
+* **Service không có endpoint**: pod crash/Readiness fail → `kubectl -n srs-nemi-tool describe pod ...`
 * **ImagePullBackOff**: kiểm tra quyền ECR (node role đã có `--full-ecr-access`), hoặc pull secret nếu registry private khác.
 * **Argo CD “OutOfSync”**: sai `repoURL/targetRevision/path` hoặc repo private chưa cấp quyền.
 
@@ -442,7 +442,7 @@ kubectl -n be-nemi get ingress
 
 ```bash
 # Xoá app (giữ Argo CD)
-kubectl -n argocd delete application be-nemi
+kubectl -n argocd delete application srs-nemi-tool
 
 # Gỡ Argo CD
 helm -n argocd uninstall argocd
