@@ -1,4 +1,4 @@
 # values.yaml
-repoURL: "'https://github.com/TracVietHustCS/eks-nemi-gitops.git"
+repoURL: "https://github.com/TracVietHustCS/eks-nemi-gitops.git"
 destinationServer: "https://kubernetes.default.svc"  # hoặc địa chỉ API server của cluster Kubernetes
 targetRevision : "release/dev"  # hoặc "main" nếu muốn sử dụng nhánh chính
