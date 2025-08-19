@@ -12,7 +12,7 @@ ingress:
     scheme: internet-facing
     certificateArn: arn:aws:acm:ap-southeast-1:992382687445:certificate/221e7931-4473-48b1-a566-d8a565a1f974
   hosts:
-      -paths:
+      - paths:
         - path: /argocd/*
           pathType: Prefix
           serviceName: argocd-server
