@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-server-proxy
+  namespace: srs-nemi-tool
+spec:
+  type: ClusterIP
+  # ExternalName trỏ tới fullname service ở namespace argocd
+  externalName: argocd-server.argocd.svc.cluster.local
+  ports:
+    - port: 80          
+      targetPort: 80    
