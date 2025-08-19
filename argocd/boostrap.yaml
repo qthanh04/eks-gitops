@@ -6,13 +6,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/TracVietHustCS/eks-nemi-gitops.git'
-    targetRevision: main
-    path: argo-cd/apps
+    repoURL: "{{ .Values.repoURL }}"
+    targetRevision: "{{ .Values.targetRevision }}"  # hoặc "main" nếu muốn sử dụng nhánh chính
+    path: argocd/apps
     directory:
       recurse: true
   destination:
-    server: https://kubernetes.default.svc
+    server: "{{ .Values.destinationServer }}"
     namespace: argocd
   syncPolicy:
     automated:

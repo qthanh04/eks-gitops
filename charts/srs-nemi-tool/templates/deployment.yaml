@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "srs-nemi-tool.fullname" . }}
+  name: {{ include "srs-nemi-tool.name" . }}
   labels:
     app: {{ include "srs-nemi-tool.name" . }}
 spec:
