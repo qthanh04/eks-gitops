@@ -27,7 +27,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ .serviceName }}
+                name: {{ if eq .serviceName "argocd-server" }}argocd-server-proxy{{ else }}{{ .serviceName }}{{ end }}
                 port:
                   number: {{ .servicePort }}
         {{- end }}
