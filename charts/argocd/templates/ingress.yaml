@@ -12,6 +12,7 @@ metadata:
     alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.alb.certificateArn }}
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/group.name: {{ .Values.ingress.alb.groupName }}
+    alb.ingress.kubernetes.io/group.order: "15"
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
@@ -23,9 +24,9 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ $.Values.service.name }}
+                name: {{ .serviceName }}
                 port:
-                  number: {{ $.Values.service.port }}
+                  number: {{ .servicePort }}
         {{- end }}
   {{- end }}
 {{- end }}
