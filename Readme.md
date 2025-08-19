@@ -362,7 +362,7 @@ spec:
     helm:
       releaseName: srs-nemi-tool
   destination:
-    server: https://kubernetes.default.svc
+    server: "{{ .Values.path }}"
     namespace: srs-nemi-tool
   syncPolicy:
     automated:

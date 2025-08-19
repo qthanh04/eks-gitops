@@ -6,13 +6,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/TracVietHustCS/eks-nemi-gitops.git'
-    targetRevision: main
+    repoURL: "{{ .Values.repoURL }}"
+    targetRevision: "{{ .Values.targetRevision }}"  # hoặc "main" nếu muốn sử dụng nhánh chính
     path: charts/srs-nemi-tool
     helm:
-      releaseName: release
+      releaseName: srs-nemi-tool
   destination:
-    server: https://kubernetes.default.svc
+    server: "{{ .Values.destinationServer }}"
     namespace: srs-nemi-tool
   syncPolicy:
     automated:
