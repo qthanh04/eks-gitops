@@ -4,7 +4,7 @@ metadata:
   name: argocd-server-proxy
   namespace: srs-nemi-tool
 spec:
-  type: NodePort
+  type: ExternalName
   # ExternalName trỏ tới fullname service ở namespace argocd
   externalName: argocd-server.argocd.svc.cluster.local
   ports:
