@@ -27,9 +27,9 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "srs-nemi-tool.name" $ }}
+                name: {{ .serviceName }}
                 port:
-                  number: {{ $.Values.service.port }}
+                  number: {{ .servicePort }}
         {{- end }}
   {{- end }}
 {{- end }}
