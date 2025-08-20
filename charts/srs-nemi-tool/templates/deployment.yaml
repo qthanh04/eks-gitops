@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "srs-nemi-tool.name" . }}
+  labels:
+    app: {{ include "srs-nemi-tool.name" . }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}   
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "srs-nemi-tool.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "srs-nemi-tool.name" . }}
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: {{ include "srs-nemi-tool.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          resources:   
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
