@@ -1,0 +1,23 @@
+namespace: argocd
+
+ingress:
+  enabled: true
+  name: argocd
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-1:173342361670:certificate/de38cfcf-b2b3-429c-8b9d-0e2d1222a4dd
+    alb.ingress.kubernetes.io/inbound-cidrs: 0.0.0.0/0
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/subnets: subnet-0bacde7a1e135d411,subnet-0a7d92469b715ba52
+
+  hosts:
+    - host: nemi-dev-02-*
+      paths:
+        - path: /
+          pathType: Prefix
+          serviceName: argocd-server
+          servicePort: 443
