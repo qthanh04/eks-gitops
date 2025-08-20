@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: srs-nemi-tool
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://gitlab.com/dube2/srs-nemi-tool-argocd.git"
+    targetRevision: release/dev  # hoặc "main" nếu muốn sử dụng nhánh chính
+    path: charts/srs-nemi-tool
+    helm:
+      releaseName: srs-nemi-tool
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: release/dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,4 @@
+# # Ignore ArgoCD secrets
+# secret.yaml
+# secrets/
+# *.secret.yaml
