@@ -25,3 +25,9 @@ ingress:
           servicePort: 8080
         
   defaultBackend: false  # nếu muốn cấu hình default backend
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 50
