@@ -146,9 +146,13 @@ metadata:
 spec:
   controller: ingress.k8s.aws/alb
 YAML
+```
 
+Nếu có sẵn rồi thì
+```
 kubectl apply -f 01-ingressclass.yaml
 ```
+
 
 ---
 
@@ -177,171 +181,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 ---
 
-## 8) Tạo **Helm chart** cho ứng dụng BE Nemi
-
-Tạo cấu trúc chart:
-
-```bash
-mkdir -p charts/srs-nemi-tool/templates
-```
-
-**`charts/srs-nemi-tool/Chart.yaml`**
-
-```yaml
-apiVersion: v2
-name: srs-nemi-tool
-description: Backend Nemi application
-type: application
-version: 0.1.0
-appVersion: "1.0.0"
-```
-
-**`charts/srs-nemi-tool/values.yaml`** (đổi `<ACCOUNT_ID>` và tag image)
-
-```yaml
-replicaCount: 1
-
-image:
-  repository: <ACCOUNT_ID>.dkr.ecr.ap-southeast-1.amazonaws.com/srs-nemi-tool
-  tag: srs-nemi-tool-develop-1.0.0
-  pullPolicy: IfNotPresent
-
-service:
-  type: NodePort
-  port: 8080
-
-ingress:
-  enabled: true
-  className: my-aws-ingress-class
-  alb:
-    name: ssl-ingress
-    scheme: internet-facing
-    certificateArn: arn:aws:acm:ap-southeast-1:<ACCOUNT_ID>:certificate/<YOUR-CERT-UUID> # hoặc bỏ nếu chỉ HTTP
-  hosts:
-    - paths:
-        - path: /
-          pathType: Prefix
-```
-
-**`charts/srs-nemi-tool/templates/_helpers.tpl`**
-
-```yaml
-{{- define "srs-nemi-tool.name" -}}
-{{ .Chart.Name }}
-{{- end }}
-
-{{- define "srs-nemi-tool.fullname" -}}
-{{ include "srs-nemi-tool.name" . }}-{{ .Release.Name }}
-{{- end }}
-```
-
-**`charts/srs-nemi-tool/templates/deployment.yaml`**
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "srs-nemi-tool.fullname" . }}
-  labels:
-    app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
-spec:
-  replicas: {{ .Values.replicaCount }}
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
-    spec:
-      serviceAccountName: default
-      containers:
-        - name: {{ include "srs-nemi-tool.name" . }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - containerPort: {{ .Values.service.port }}
-          readinessProbe:
-            httpGet:
-              path: /
-              port: {{ .Values.service.port }}
-            initialDelaySeconds: 3
-            periodSeconds: 5
-          livenessProbe:
-            httpGet:
-              path: /
-              port: {{ .Values.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 10
-```
-
-**`charts/srs-nemi-tool/templates/service.yaml`**
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "srs-nemi-tool.fullname" . }}
-  labels:
-    app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
-spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
-      protocol: TCP
-      name: http
-  selector:
-    app.kubernetes.io/name: {{ include "srs-nemi-tool.name" . }}
-```
-
-**`charts/srs-nemi-tool/templates/ingress.yaml`**
-
-```yaml
-{{- if .Values.ingress.enabled }}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ include "srs-nemi-tool.fullname" . }}
-  annotations:
-    alb.ingress.kubernetes.io/load-balancer-name: {{ .Values.ingress.alb.name }}
-    alb.ingress.kubernetes.io/scheme: {{ .Values.ingress.alb.scheme }}
-    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
-    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
-    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
-    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
-    alb.ingress.kubernetes.io/success-codes: '200'
-    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
-    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}]'
-    {{- if .Values.ingress.alb.certificateArn }}
-    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.alb.certificateArn }}
-    alb.ingress.kubernetes.io/ssl-redirect: '443'
-    {{- end }}
-spec:
-  ingressClassName: {{ .Values.ingress.className }}
-  rules:
-    - http:
-        paths:
-          {{- range .Values.ingress.hosts }}
-          {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
-            backend:
-              service:
-                name: {{ include "srs-nemi-tool.fullname" $ }}
-                port:
-                  number: {{ $.Values.service.port }}
-          {{- end }}
-          {{- end }}
-{{- end }}
-```
-
-> Nếu chỉ muốn HTTP, bỏ các annotation liên quan `certificate-arn` và `ssl-redirect`.
-
----
-
-## 9) Tạo **Argo CD Application** trỏ tới chart
+## 8) Tạo **Argo CD Application** trỏ tới chart
 
 Tạo file `argocd/app-srs-nemi-tool.yaml` (đổi `repoURL` + `path` theo repo của bạn):
 
