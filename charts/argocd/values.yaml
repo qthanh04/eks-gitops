@@ -3,7 +3,6 @@ namespace: argocd
 ingress:
   enabled: true
   name: nemi-dev-02-argocd
-  className: nemi-dev-02-ingress-class
   annotations:
     kubernetes.io/ingress.class: alb  
     alb.ingress.kubernetes.io/backend-protocol: HTTPS
