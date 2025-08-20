@@ -1,23 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: srs-nemi-tool
+  name: argocd-ingress
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: "https://github.com/TracVietHustCS/eks-nemi-gitops.git"
+    repoURL: "https://gitlab.com/dube2/srs-nemi-tool-argocd.git"
     targetRevision: release/dev  # hoặc "main" nếu muốn sử dụng nhánh chính
-    path: charts/srs-nemi-tool
+    path: charts/argocd
     helm:
       releaseName: srs-nemi-tool
   destination:
     server: "https://kubernetes.default.svc"
-<<<<<<< HEAD
-    namespace: srs-nemi-tool
-=======
-    namespace: nemi-dev
->>>>>>> afc5eeeab62f8922c4e429cc793e094d64baf364
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
