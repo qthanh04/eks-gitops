@@ -2,20 +2,20 @@ namespace: argocd
 
 ingress:
   enabled: true
-  name: argocd
+  name: nemi-dev-02-argocd
   annotations:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/backend-protocol: HTTPS
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-1:173342361670:certificate/de38cfcf-b2b3-429c-8b9d-0e2d1222a4dd
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-1:173342361670:certificate/8040e2e2-5590-4166-9ee5-0a365d41b613
     alb.ingress.kubernetes.io/inbound-cidrs: 0.0.0.0/0
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: "443"
     alb.ingress.kubernetes.io/subnets: subnet-0bacde7a1e135d411,subnet-0a7d92469b715ba52
 
   hosts:
-    - host: neni-dev-02-argocd.ecombase.net
+    - host: nemi-dev-02-argocd.ecombase.net
       paths:
         - path: /
           pathType: Prefix
