@@ -13,7 +13,7 @@ spec:
       releaseName: srs-nemi-tool
   destination:
     server: "https://kubernetes.default.svc"
-    namespace: release/dev
+    namespace: nemi-dev
   syncPolicy:
     automated:
       prune: true

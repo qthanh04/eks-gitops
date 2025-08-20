@@ -15,7 +15,7 @@ ingress:
     alb.ingress.kubernetes.io/subnets: subnet-0bacde7a1e135d411,subnet-0a7d92469b715ba52
 
   hosts:
-    - host: nemi-dev-02-*
+    - host: neni-dev-02-argocd.ecombase.net
       paths:
         - path: /
           pathType: Prefix
