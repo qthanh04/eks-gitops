@@ -13,7 +13,7 @@ Tài liệu này hướng dẫn **từ con số 0** đến khi ứng dụng **BE
 - Tài khoản AWS có quyền tạo EKS, IAM, VPC, ELB, ACM…
 - Đã có **SSH key** trong EC2 (ví dụ `kube-demo`) nếu muốn SSH vào node.
 
-Thiết lập biến môi trường (đổi lại theo của bạn):
+Thiết lập biến môi trường (đổi lại theo của bạn)::
 
 ```bash
 export AWS_REGION=ap-southeast-1
