@@ -7,7 +7,7 @@ ingress:
     kubernetes.io/ingress.class: alb  
     alb.ingress.kubernetes.io/backend-protocol: HTTPS
     alb.ingress.kubernetes.io/load-balancer-name: nemi-dev-02-argocd
-    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/target-type: instance
     alb.ingress.kubernetes.io/scheme: internet-facing   
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-1:173342361670:certificate/8040e2e2-5590-4166-9ee5-0a365d41b613
     alb.ingress.kubernetes.io/inbound-cidrs: 0.0.0.0/0
