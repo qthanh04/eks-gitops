@@ -11,7 +11,7 @@ ingress:
     alb.ingress.kubernetes.io/scheme: internet-facing   
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-1:173342361670:certificate/8040e2e2-5590-4166-9ee5-0a365d41b613
     alb.ingress.kubernetes.io/inbound-cidrs: 0.0.0.0/0
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: "443"
     alb.ingress.kubernetes.io/subnets: subnet-020b9a8474ac5466c,subnet-06c5e702bba778fbf
 
@@ -21,4 +21,4 @@ ingress:
         - path: /
           pathType: Prefix
           serviceName: argocd-server
-          servicePort: 80
+          servicePort: 443
