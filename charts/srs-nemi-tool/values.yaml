@@ -1,14 +1,11 @@
 replicaCount: 1
-
 image:
   repository: 173342361670.dkr.ecr.ap-southeast-1.amazonaws.com/srs-nemi-tool
-  tag: srs-nemi-tool-develop-1.0.0
+  tag: srs-nemi-tool-develop-1.0.0-d7f6929
   pullPolicy: IfNotPresent
-
 service:
   type: NodePort
   port: 8080
-
 ingress:
   enabled: true
   className: nemi-dev-02-ingress-class
@@ -27,10 +24,8 @@ ingress:
         - path: /client-api
           pathType: Prefix
           serviceName: srs-nemi-tool
-          servicePort: 8080      
-        
-  defaultBackend: false  # nếu muốn cấu hình default backend
-
+          servicePort: 8080
+  defaultBackend: false # nếu muốn cấu hình default backend
 autoscaling:
   enabled: true
   targetCPUUtilizationPercentage: 50
