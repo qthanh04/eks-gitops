@@ -161,12 +161,8 @@ kubectl apply -f 01-ingressclass.yaml
 Cách nhanh bằng Helm (demo):
 
 ```bash
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
 kubectl create namespace argocd
-
-helm upgrade --install argocd argo/argo-cd -n argocd \
-  --set server.service.type=LoadBalancer
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```
 
 Lấy UI endpoint & mật khẩu:
@@ -183,7 +179,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 ## 8) Tạo **Argo CD Application** trỏ tới chart
 
-Tạo file `argocd/app-srs-nemi-tool.yaml` (đổi `repoURL` + `path` theo repo của bạn):
+Tạo file `argocd/boostrap.yaml` (đổi `repoURL` + `path` theo repo của bạn hoặc dùng clone từ repo về):
 
 ```bash
 mkdir -p argocd
@@ -215,8 +211,9 @@ YAML
 
 Áp dụng Application:
 
+
 ```bash
-kubectl apply -f argocd/app-srs-nemi-tool.yaml
+kubectl apply -f argocd/boostrap.yaml
 ```
 
 ---
