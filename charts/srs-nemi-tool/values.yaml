@@ -24,8 +24,10 @@ ingress:
         - path: /client-api
           pathType: Prefix
           serviceName: srs-nemi-tool
-          servicePort: 8080
-  defaultBackend: false # nếu muốn cấu hình default backend
+          servicePort: 8080      
+        
+  defaultBackend: false  # nếu muốn cấu hình default backend
+
 autoscaling:
   enabled: true
   targetCPUUtilizationPercentage: 50
