@@ -1,4 +1,4 @@
-# # Ignore ArgoCD secrets
-# secret.yaml
-# secrets/
-# *.secret.yaml
+# Ignore ArgoCD secrets
+secret.yaml
+secrets/
+*.secret.yaml
