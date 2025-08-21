@@ -37,18 +37,16 @@ spec:
               memory: 512Mi
           readinessProbe:
             httpGet:
-              port: management
-              scheme: HTTP
-              path: /actuator/health/readiness
+              port: {{ .Values.service.port }}
+              path: /public-api/test2
             initialDelaySeconds: 60  #  Chờ 10s sau khi container start
             periodSeconds: 5         #  Kiểm tra mỗi 5s
             failureThreshold: 3      #  Sau 3 lần fail => pod "not ready"
             successThreshold: 1      #  1 lần thành công => pod "ready"
           livenessProbe:
             httpGet:
-              port: management
-              scheme: HTTP
-              path: /actuator/health/liveness
+              port: {{ .Values.service.port }}
+              path: /public-api/test2
             initialDelaySeconds: 60  #  Chờ 10s sau khi container start
             periodSeconds: 5         #  Kiểm tra mỗi 5s
             failureThreshold: 3      #  Sau 3 lần fail => pod "not ready"
