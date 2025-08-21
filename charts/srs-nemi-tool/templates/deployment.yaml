@@ -11,8 +11,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0   # 👈 Không shutdown pod cũ đến khi pod mới ready
-      maxSurge: 50%       # 👈 Cho phép tạo thêm pod tạm thời
+      maxUnavailable: 0   #  Không shutdown pod cũ đến khi pod mới ready
+      maxSurge: 50%       #  Cho phép tạo thêm pod tạm thời
   selector:
     matchLabels:
       app: {{ include "srs-nemi-tool.name" . }}
