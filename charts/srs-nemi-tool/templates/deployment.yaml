@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "srs-nemi-tool.name" . }}
+  labels:
+    app: {{ include "srs-nemi-tool.name" . }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}   
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0   #  Không shutdown pod cũ đến khi pod mới ready
+      maxSurge: 50%       #  Cho phép tạo thêm pod tạm thời
+  selector:
+    matchLabels:
+      app: {{ include "srs-nemi-tool.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "srs-nemi-tool.name" . }}
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: {{ include "srs-nemi-tool.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          resources:   
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              port: {{ .Values.service.port }}
+              path: /public-api/test2
+            initialDelaySeconds: 300  #  Chờ 10s sau khi container start
+            periodSeconds: 30       #  Kiểm tra mỗi 5s
+            failureThreshold: 10      #  Sau 3 lần fail => pod "not ready"
+            successThreshold: 1      #  1 lần thành công => pod "ready"
+          livenessProbe:
+            httpGet:
+              port: {{ .Values.service.port }}
+              path: /public-api/test2
+            initialDelaySeconds: 500  #  Chờ 10s sau khi container start
+            periodSeconds: 30         #  Kiểm tra mỗi 5s
+            failureThreshold: 10      #  Sau 3 lần fail => pod "not ready"
+            successThreshold: 1      #  1 lần thành công => pod "ready"

@@ -1,0 +1,33 @@
+replicaCount: 1
+image:
+  repository: 173342361670.dkr.ecr.ap-southeast-1.amazonaws.com/srs-nemi-tool
+  tag: srs-nemi-tool-develop-1.0.0-d7f6929
+  pullPolicy: IfNotPresent
+service:
+  type: NodePort
+  port: 8080
+ingress:
+  enabled: true
+  className: nemi-dev-02-ingress-class
+  alb:
+    name: nemi-dev-02
+    groupName: my-shared-alb
+    scheme: internet-facing
+    certificateArn: arn:aws:acm:ap-southeast-1:173342361670:certificate/8040e2e2-5590-4166-9ee5-0a365d41b613
+  hosts:
+    - paths:
+        - path: /public-api
+          pathType: Prefix
+          serviceName: srs-nemi-tool
+          servicePort: 8080
+    - paths:
+        - path: /client-api
+          pathType: Prefix
+          serviceName: srs-nemi-tool
+          servicePort: 8080      
+        
+  defaultBackend: false  # nếu muốn cấu hình default backend
+
+autoscaling:
+  enabled: true
+  targetCPUUtilizationPercentage: 50
