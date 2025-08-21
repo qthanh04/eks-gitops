@@ -5,7 +5,9 @@ Tài liệu này hướng dẫn **từ con số 0** đến khi ứng dụng **BE
 
 ---
 
-## 0) Tiền đề & công cụ
+
+
+## 0) Tiền đề & công cụ.
 
 - Đã cài: **AWS CLI**, **kubectl**, **eksctl**, **helm**, **git** (tuỳ chọn: `gh`), (tuỳ chọn) **argocd** CLI.
 - Tài khoản AWS có quyền tạo EKS, IAM, VPC, ELB, ACM…
