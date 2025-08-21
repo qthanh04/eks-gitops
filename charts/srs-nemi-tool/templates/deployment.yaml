@@ -8,6 +8,11 @@ spec:
   {{- if not .Values.autoscaling.enabled }}   
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0   #  Không shutdown pod cũ đến khi pod mới ready
+      maxSurge: 50%       #  Cho phép tạo thêm pod tạm thời
   selector:
     matchLabels:
       app: {{ include "srs-nemi-tool.name" . }}
@@ -30,3 +35,13 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          readinessProbe:
+            initialDelaySeconds: 60  #  Chờ 10s sau khi container start
+            periodSeconds: 5         #  Kiểm tra mỗi 5s
+            failureThreshold: 3      #  Sau 3 lần fail => pod "not ready"
+            successThreshold: 1      #  1 lần thành công => pod "ready"
+          livenessProbe:
+            initialDelaySeconds: 60  #  Chờ 10s sau khi container start
+            periodSeconds: 5         #  Kiểm tra mỗi 5s
+            failureThreshold: 3      #  Sau 3 lần fail => pod "not ready"
+            successThreshold: 1      #  1 lần thành công => pod "ready"
