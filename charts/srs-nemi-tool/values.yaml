@@ -1,6 +1,7 @@
 replicaCount: 1
 image:
-  repository: 241533144174.dkr.ecr.ap-southeast-1.amazonaws.com/srs-nemi-tool:latest
+  repository: 241533144174.dkr.ecr.ap-southeast-1.amazonaws.com/srs-nemi-tool
+  tag: latest
   pullPolicy: IfNotPresent
 service:
   type: NodePort
