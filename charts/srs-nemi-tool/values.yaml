@@ -11,12 +11,12 @@ service:
 
 ingress:
   enabled: true
-  className: my-aws-ingress-class
+  className: nemi-dev-02-ingress-class
   alb:
-    name: ssl-ingress
+    name: nemi-dev-02
     groupName: my-shared-alb
     scheme: internet-facing
-    certificateArn: arn:aws:acm:ap-southeast-1:173342361670:certificate/de38cfcf-b2b3-429c-8b9d-0e2d1222a4dd
+    certificateArn: arn:aws:acm:ap-southeast-1:173342361670:certificate/8040e2e2-5590-4166-9ee5-0a365d41b613
   hosts:
     - paths:
         - path: /public-api
@@ -33,6 +33,4 @@ ingress:
 
 autoscaling:
   enabled: true
-  minReplicas: 1
-  maxReplicas: 10
   targetCPUUtilizationPercentage: 50
