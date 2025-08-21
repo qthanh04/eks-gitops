@@ -34,8 +34,7 @@ spec:
               memory: 128Mi
             limits:
               cpu: 500m
-              memory: 512Mi
-          readinessProbe:
+              memory: 512Mi          readinessProbe:
             httpGet:
               port: {{ .Values.service.port }}
               path: /public-api/test2
