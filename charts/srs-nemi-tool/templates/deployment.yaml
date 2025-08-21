@@ -39,15 +39,15 @@ spec:
             httpGet:
               port: {{ .Values.service.port }}
               path: /public-api/test2
-            initialDelaySeconds: 60  #  Chờ 10s sau khi container start
-            periodSeconds: 5         #  Kiểm tra mỗi 5s
-            failureThreshold: 3      #  Sau 3 lần fail => pod "not ready"
+            initialDelaySeconds: 300  #  Chờ 10s sau khi container start
+            periodSeconds: 30       #  Kiểm tra mỗi 5s
+            failureThreshold: 10      #  Sau 3 lần fail => pod "not ready"
             successThreshold: 1      #  1 lần thành công => pod "ready"
           livenessProbe:
             httpGet:
               port: {{ .Values.service.port }}
               path: /public-api/test2
-            initialDelaySeconds: 60  #  Chờ 10s sau khi container start
-            periodSeconds: 5         #  Kiểm tra mỗi 5s
-            failureThreshold: 3      #  Sau 3 lần fail => pod "not ready"
+            initialDelaySeconds: 500  #  Chờ 10s sau khi container start
+            periodSeconds: 30         #  Kiểm tra mỗi 5s
+            failureThreshold: 10      #  Sau 3 lần fail => pod "not ready"
             successThreshold: 1      #  1 lần thành công => pod "ready"
