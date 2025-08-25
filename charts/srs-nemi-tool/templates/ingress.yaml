@@ -21,7 +21,7 @@ spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
   {{- range .Values.ingress.hosts }}
-    - host: nemi-dev-02.ecombase.net 
+    - host: nemi-dev-02.ecombase.net/
       http:
         paths:
         {{- range .paths }}
