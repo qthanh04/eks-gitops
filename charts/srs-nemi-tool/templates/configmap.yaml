@@ -1,0 +1,14 @@
+apiVersion: v1 
+kind: ConfigMap
+metadata: 
+  name: srs-nemi-tool-configmap
+  namespace: nemi-dev
+  labels: 
+    app.kubernetes.io/name: srs-nemi-tool
+data: 
+  LOG_LEVEL: debug #debug, info, warn, error
+  LOG_FORMAT: json #json, text
+  APP_ENV: production     # dev, staging, prod
+  APP_NAME: srs-nemi-tool #tên app
+  MAX_CONNECTIONS: "100"
+
