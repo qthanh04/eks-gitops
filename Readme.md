@@ -13,6 +13,7 @@ Tài liệu này hướng dẫn **từ con số 0** đến khi ứng dụng **BE
 
 Thiết lập biến môi trường (đổi lại theo của bạn):
 
+
 ```bash
 export AWS_REGION=ap-southeast-1
 export CLUSTER_NAME=eksdemo1
@@ -262,7 +263,220 @@ kubectl -n srs-nemi-tool get ingress
 
 ---
 
-## 13) Troubleshooting nhanh
+---
+## 13) Hướng dẫn triển khai Ingress cho **srs-nemi-tool** với 2 cách:
+- **Cách A:** Giữ ALB làm Load Balancer chính + Nginx Deployment rewrite  
+- **Cách B:** Dùng Nginx Ingress Controller + annotation rewrite
+
+### **Cách A: ALB + Nginx Deployment Rewrite**
+
+#### **Flow**
+```
+Internet → AWS ALB (internet-facing) → Nginx Deployment (ClusterIP) → Backend (srs-nemi-tool)
+```
+
+### **1️⃣ Deployment Nginx Rewrite**
+- file : nginx-rewrite-service.yaml
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-nemi-tool-nginx-rewrite
+  namespace: nemi-dev
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: srs-nemi-tool-nginx-rewrite
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srs-nemi-tool-nginx-rewrite
+  namespace: nemi-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: srs-nemi-tool-nginx-rewrite
+  template:
+    metadata:
+      labels:
+        app: srs-nemi-tool-nginx-rewrite
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: srs-nemi-tool-nginx-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: srs-nemi-tool-nginx-config
+  namespace: nemi-dev
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+
+        location ~ ^/srs-nemi-tool/public-api(.*)$ {
+            rewrite ^/srs-nemi-tool/public-api(.*)$ /public-api$1 break;
+            proxy_pass http://srs-nemi-tool:8080;
+        }
+
+        location ~ ^/srs-nemi-tool/client-api(.*)$ {
+            rewrite ^/srs-nemi-tool/client-api(.*)$ /client-api$1 break;
+            proxy_pass http://srs-nemi-tool:8080;
+        }
+
+        location / {
+            proxy_pass http://srs-nemi-tool:8080;
+        }
+    }
+```
+
+### **2️⃣ Ingress sử dụng ALB**
+- file : ingress.yaml
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: srs-nemi-tool-alb
+  namespace: nemi-dev
+  annotations:
+    alb.ingress.kubernetes.io/load-balancer-name: "srs-nemi-tool-alb"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443},{"HTTP":80}]'
+    alb.ingress.kubernetes.io/certificate-arn: <ACM_CERT_ARN>
+spec:
+  ingressClassName: alb
+  rules:
+    - host: nemi-dev-02.ecombase.net
+      http:
+        paths:
+          - path: /srs-nemi-tool
+            pathType: Prefix
+            backend:
+              service:
+                name: srs-nemi-tool-nginx-rewrite
+                port:
+                  number: 80
+          - path: /public-api
+            pathType: Prefix
+            backend:
+              service:
+                name: srs-nemi-tool
+                port:
+                  number: 8080
+          - path: /client-api
+            pathType: Prefix
+            backend:
+              service:
+                name: srs-nemi-tool
+                port:
+                  number: 8080
+```
+
+---
+
+## **Cách B: Nginx Ingress Controller + Annotation Rewrite**
+
+### **Flow**
+```
+Internet → Nginx Ingress Controller (LoadBalancer) → Backend
+```
+
+### **1️⃣ Cài Nginx Ingress Controller**
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm install ingress-nginx ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
+
+# Nếu muốn public ra Internet:
+kubectl -n ingress-nginx annotate svc ingress-nginx-controller \
+  service.beta.kubernetes.io/aws-load-balancer-scheme=internet-facing --overwrite
+```
+
+### **2️⃣ Ingress**
+
+- file : ingress-controller.yaml
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: srs-nemi-tool-ingress
+  namespace: nemi-dev
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+  - # host: nemi-dev-02.ecombase.net
+    http:
+      paths:
+      - path: /srs-nemi-tool(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: srs-nemi-tool
+            port:
+              number: 8080
+```
+- file : ingress-direct.yaml
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: srs-nemi-tool-direct
+  namespace: nemi-dev
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /public-api
+        pathType: Prefix
+        backend:
+          service:
+            name: srs-nemi-tool
+            port:
+              number: 8080
+      - path: /client-api
+        pathType: Prefix
+        backend:
+          service:
+            name: srs-nemi-tool
+            port:
+              number: 8080
+```
+
+
+### **3️⃣ Test các route**
+```bash
+HOST="nemi-dev-02.ecombase.net"
+URL="http://<Nginx_PUBLIC_HOSTNAME>"
+
+curl -H "Host: $HOST" $URL/public-api/health
+curl -H "Host: $HOST" $URL/client-api/health
+curl -H "Host: $HOST" $URL/srs-nemi-tool/public-api/health
+```
+---
+
+## 14) Troubleshooting nhanh
 
 * **ALB không tạo**: kiểm tra subnet tags, IAM policy, log:
 
@@ -275,7 +489,7 @@ kubectl -n srs-nemi-tool get ingress
 
 ---
 
-## 14) Dọn dẹp
+## 15) Dọn dẹp
 
 ```bash
 # Xoá app (giữ Argo CD)
