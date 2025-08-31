@@ -1,0 +1,93 @@
+# # Nginx rewrite service to handle /srs-nemi-tool path rewriting
+# {{- if .Values.ingress.enabled }}
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: {{ include "srs-nemi-tool.name" . }}-nginx-rewrite
+#   labels:
+#     app: {{ include "srs-nemi-tool.name" . }}-nginx-rewrite
+# spec:
+#   type: ClusterIP
+#   ports:
+#     - port: 80
+#       targetPort: 80
+#       protocol: TCP
+#   selector:
+#     app: {{ include "srs-nemi-tool.name" . }}-nginx-rewrite
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: {{ include "srs-nemi-tool.name" . }}-nginx-rewrite
+#   labels:
+#     app: {{ include "srs-nemi-tool.name" . }}-nginx-rewrite
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: {{ include "srs-nemi-tool.name" . }}-nginx-rewrite
+#   template:
+#     metadata:
+#       labels:
+#         app: {{ include "srs-nemi-tool.name" . }}-nginx-rewrite
+#     spec:
+#       containers:
+#         - name: nginx
+#           image: nginx:alpine
+#           ports:
+#             - containerPort: 80
+#           volumeMounts:
+#             - name: nginx-config
+#               mountPath: /etc/nginx/conf.d
+#           resources:
+#             requests:
+#               cpu: 50m
+#               memory: 64Mi
+#             limits:
+#               cpu: 200m
+#               memory: 128Mi
+#       volumes:
+#         - name: nginx-config
+#           configMap:
+#             name: {{ include "srs-nemi-tool.name" . }}-nginx-config
+# ---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: {{ include "srs-nemi-tool.name" . }}-nginx-config
+# data:
+#   default.conf: |
+#     server {
+#         listen 80;
+#         server_name _;
+        
+#         # Rewrite /srs-nemi-tool/public-api/* to /public-api/*
+#         location ~ ^/srs-nemi-tool/public-api(.*)$ {
+#             rewrite ^/srs-nemi-tool/public-api(.*)$ /public-api$1 break;
+#             proxy_pass http://srs-nemi-tool:8080;
+#             proxy_set_header Host $host;
+#             proxy_set_header X-Real-IP $remote_addr;
+#             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#             proxy_set_header X-Forwarded-Proto $scheme;
+#         }
+        
+#         # Rewrite /srs-nemi-tool/client-api/* to /client-api/*
+#         location ~ ^/srs-nemi-tool/client-api(.*)$ {
+#             rewrite ^/srs-nemi-tool/client-api(.*)$ /client-api$1 break;
+#             proxy_pass http://srs-nemi-tool:8080;
+#             proxy_set_header Host $host;
+#             proxy_set_header X-Real-IP $remote_addr;
+#             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#             proxy_set_header X-Forwarded-Proto $scheme;
+#         }
+        
+#         # Direct pass for other paths
+#         location / {
+#             proxy_pass http://srs-nemi-tool:8080;
+#             proxy_set_header Host $host;
+#             proxy_set_header X-Real-IP $remote_addr;
+#             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#             proxy_set_header X-Forwarded-Proto $scheme;
+#         }
+#     }
+# {{- end }}
