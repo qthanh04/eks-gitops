@@ -1,4 +1,3 @@
-````markdown
 # README — Triển khai từ đầu: EKS + AWS Load Balancer Controller + Argo CD + Helm (GitOps)
 
 Tài liệu này hướng dẫn **từ con số 0** đến khi ứng dụng **BE Nemi** chạy trên **EKS** và **Argo CD** tự đồng bộ từ Git (Helm chart).
@@ -513,6 +512,3 @@ eksctl delete cluster --name=${CLUSTER_NAME} --region=${AWS_REGION}
 * Bật **prune + selfHeal** (đã có trong ví dụ) để đảm bảo drift-free.
 
 ---
-
-```
-```
