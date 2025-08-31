@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-configserver
+  namespace: configserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-configserver
+  template:
+    metadata:
+      labels:
+        app: spring-configserver
+    spec:
+      containers:
+        - name: configserver
+          image: springcloud/spring-cloud-kubernetes-configserver:3.1.7
+          ports:
+            - containerPort: 8888
+          envFrom:
+            - configMapRef:
+                name: configserver-env
+          env:
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: config-server-secret
+                  key: username
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: config-server-secret
+                  key: password

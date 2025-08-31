@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: global-app-config
+  namespace: nemi-dev
+  labels:
+    app.kubernetes.io/name: global-app-config #tên configmap
+    app.kubernetes.io/component: shared-config # vai trò của configmap
+data:
+  # Global Application Settings
+  LOG_LEVEL: "info"           # debug, info, warn, error
+  LOG_FORMAT: "json"          # json, text
+  APP_ENV: "production"       # dev, staging, prod
+  
+  # Redis Settings  
+  REDIS_TIMEOUT: "5s"
+  REDIS_MAX_CONNECTIONS: "100"
+  
+  # API Settings
+  API_TIMEOUT: "30s"
+  API_RATE_LIMIT: "1000"
+  
+  # Security Settings
+  JWT_EXPIRY: "24h"
+  SESSION_TIMEOUT: "30m"
+  
+  # Monitoring
+  METRICS_ENABLED: "true"
+  HEALTH_CHECK_INTERVAL: "30s"
