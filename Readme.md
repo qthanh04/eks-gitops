@@ -5,13 +5,23 @@ Tài liệu này hướng dẫn **từ con số 0** đến khi ứng dụng **BE
 
 ---
 
+<<<<<<< HEAD
 ## 0) Tiền đề & công cụ
+=======
+
+
+## 0) Tiền đề & công cụ.
+>>>>>>> d0c60651a21befbd3a98e12b9614557851f59d4b
 
 - Đã cài: **AWS CLI**, **kubectl**, **eksctl**, **helm**, **git** (tuỳ chọn: `gh`), (tuỳ chọn) **argocd** CLI.
 - Tài khoản AWS có quyền tạo EKS, IAM, VPC, ELB, ACM…
 - Đã có **SSH key** trong EC2 (ví dụ `kube-demo`) nếu muốn SSH vào node.
 
+<<<<<<< HEAD
 Thiết lập biến môi trường (đổi lại theo của bạn):
+=======
+Thiết lập biến môi trường (đổi lại theo của bạn)::
+>>>>>>> d0c60651a21befbd3a98e12b9614557851f59d4b
 
 ```bash
 export AWS_REGION=ap-southeast-1
