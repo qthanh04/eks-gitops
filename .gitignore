@@ -1,4 +1,42 @@
-# Ignore ArgoCD secrets
-secret.yaml
-secrets/
-*.secret.yaml
+# Sensitive files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets.yaml
+secrets.yml
+*.env
+.env*
+
+# AWS credentials
+.aws/
+aws-credentials
+aws-config
+
+# Kubernetes secrets
+*-secret.yaml
+*-secrets.yaml
+
+# Terraform state files (if using Terraform)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp

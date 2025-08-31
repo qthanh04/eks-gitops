@@ -1,16 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root-app
+  name: argocd
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: "https://github.com/QuangThanhG13/eks-nemi-gitops.git"
-    targetRevision: release/main  # hoặc "main" nếu muốn sử dụng nhánh chính
-    path: argocd/apps
-    directory:
-      recurse: true
+    repoURL: "https://github.com/<YOUR_USERNAME>/<YOUR_REPO_NAME>.git"
+    targetRevision: main
+    path: charts/argocd
+    helm:
+      releaseName: argocd
   destination:
     server: "https://kubernetes.default.svc"
     namespace: argocd
@@ -18,3 +18,5 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

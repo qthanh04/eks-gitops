@@ -1,19 +1,21 @@
 replicaCount: 1
 image:
-  repository: 241533144174.dkr.ecr.ap-southeast-1.amazonaws.com/srs-nemi-tool
+  repository: <AWS_ACCOUNT_ID>.dkr.ecr.ap-southeast-1.amazonaws.com/srs-nemi-tool
   tag: latest
   pullPolicy: IfNotPresent
+
 service:
   type: NodePort
   port: 8080
+
 ingress:
   enabled: true
-  className: nemi-dev-02-ingress-class
+  className: <INGRESS_CLASS_NAME>
   alb:
-    name: nemi-dev-02
-    groupName: my-shared-alb
+    name: <ALB_NAME>
+    groupName: <ALB_GROUP_NAME>
     scheme: internet-facing
-    certificateArn: arn:aws:acm:ap-southeast-1:241533144174:certificate/ed629ef2-0617-4661-b4ca-2a45fbd024d7
+    certificateArn: arn:aws:acm:ap-southeast-1:<AWS_ACCOUNT_ID>:certificate/<CERTIFICATE_ID>
   hosts:
     - paths:
         - path: /public-api

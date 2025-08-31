@@ -362,7 +362,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: nemi-dev-02.ecombase.net
+    - host: <YOUR_DOMAIN>.example.com
       http:
         paths:
           - path: /srs-nemi-tool
@@ -422,7 +422,7 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-  - # host: nemi-dev-02.ecombase.net
+  - # host: <YOUR_DOMAIN>.example.com
     http:
       paths:
       - path: /srs-nemi-tool(/|$)(.*)
@@ -467,7 +467,7 @@ spec:
 
 ### **3️⃣ Test các route**
 ```bash
-HOST="nemi-dev-02.ecombase.net"
+HOST="<YOUR_DOMAIN>.example.com"
 URL="http://<Nginx_PUBLIC_HOSTNAME>"
 
 curl -H "Host: $HOST" $URL/public-api/health

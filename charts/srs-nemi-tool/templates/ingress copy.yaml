@@ -24,7 +24,7 @@
 # spec:
 #   ingressClassName: {{ .Values.ingress.className }}
 #   rules:
-#     - host: nemi-dev-02.ecombase.net
+#     - host: <YOUR_DOMAIN>.example.com
 #       http:
 #         paths:
 #           # Route /srs-nemi-tool/* to nginx rewrite service
