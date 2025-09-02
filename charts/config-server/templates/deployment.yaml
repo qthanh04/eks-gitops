@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: configserver
-          image: springcloud/spring-cloud-kubernetes-configserver:3.1.7
+          image: # image sử dụng để deploy config server
           ports:
             - containerPort: 8888
           envFrom:
